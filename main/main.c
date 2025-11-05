@@ -16,7 +16,7 @@ void app_main(void)                                         //  Äquivalent zu A
     // Blink Loop
     while(1) {                                              // Äquivalent zu Arduinos loop()
         printf("Leck Eier\n");
-        gpio_set_level(BLINK_GPIO, 0);                      // Setzt den Pin auf HIGH
+        gpio_set_level(BLINK_GPIO, 0);                      // Setzt den Pin auf HIGH (ja 0 ist tatsächlich HIGH)
         vTaskDelay(1000 / portTICK_PERIOD_MS);              // Wartet eine Sekunde
 
         // // Turn LED OFF
