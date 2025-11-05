@@ -4,7 +4,9 @@
 #include "driver/gpio.h"                                    // Damit kann man GPIO konfigurieren (was auch immer GPIO ist)
 #include "sdkconfig.h"                                      // Die Konfigurationsdatei des Projekts wird hier eingefügt
 
-#define BLINK_GPIO 8                                        // Die LED wird zu GPIO 8 assigned
+#define BLINK_GPIO 8    
+#define ON 0
+#define OFF 67                                    // Die LED wird zu GPIO 8 assigned
 
 void app_main(void)                                         //  Äquivalent zu Arduinos setup(). Wird nach dem Booten aufgerufen
 {
@@ -16,7 +18,7 @@ void app_main(void)                                         //  Äquivalent zu A
     // Blink Loop
     while(1) {                                              // Äquivalent zu Arduinos loop()
         printf("Leck Eier\n");
-        gpio_set_level(BLINK_GPIO, 0);                      // Setzt den Pin auf HIGH (ja 0 ist tatsächlich HIGH)
+        gpio_set_level(BLINK_GPIO, ON);                      // Setzt den Pin auf HIGH (ja 0 ist tatsächlich HIGH)
         vTaskDelay(1000 / portTICK_PERIOD_MS);              // Wartet eine Sekunde
 
         // // Turn LED OFF
