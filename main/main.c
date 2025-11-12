@@ -6,7 +6,7 @@
 
 #define BLINK_GPIO 8    
 #define ON 0
-#define OFF 67                                    // Die LED wird zu GPIO 8 assigned
+#define OFF 1                                    // Die LED wird zu GPIO 8 assigned
 
 void app_main(void)                                         //  Äquivalent zu Arduinos setup(). Wird nach dem Booten aufgerufen
 {
