@@ -8,9 +8,6 @@ namespace Hardware
 {
     namespace Led
     {
-        /**
-         * @brief LED controller class for GPIO-based LEDs
-         */
         class LED
         {
         public:
@@ -56,30 +53,9 @@ namespace Hardware
              * @brief Blink the LED a specified number of times
              *
              * @param count Number of blinks
-             * @param interval_ms Interval time between blinks (milliseconds)
+             * @param interval_ms Interval time between Toggling (milliseconds)
              */
             void Blink(uint32_t count, uint32_t interval_ms);
-
-            /**
-             * @brief Set the LED to a specific state
-             *
-             * @param state true for on, false for off
-             */
-            void SetState(bool state);
-
-            /**
-             * @brief Get the current LED state
-             *
-             * @return true if LED is on, false if off
-             */
-            bool GetState() const;
-
-            /**
-             * @brief Get the GPIO pin number
-             *
-             * @return gpio_num_t The GPIO pin this LED is connected to
-             */
-            gpio_num_t GetPin() const;
 
         private:
             gpio_num_t m_pin_;   ///< GPIO pin number

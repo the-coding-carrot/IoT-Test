@@ -1,6 +1,7 @@
 #include "led.hpp"
 
 #include "../../config/config.hpp"
+
 #include "esp_log.h"
 
 #include <utility>
@@ -98,18 +99,6 @@ namespace Hardware
             }
         }
 
-        void LED::SetState(bool state)
-        {
-            if (state)
-                On();
-            else
-                Off();
-        }
-
-        bool LED::GetState() const { return m_is_on_; }
-
-        gpio_num_t LED::GetPin() const { return m_pin_; }
-
         void LED::initializeGpio()
         {
             esp_err_t err = gpio_reset_pin(m_pin_);
@@ -134,7 +123,12 @@ namespace Hardware
         {
             // Convert logical state to physical GPIO level based on polarity
             uint32_t gpio_level = (logical_state == m_active_low_) ? 0 : 1;
-            gpio_set_level(m_pin_, gpio_level);
+            esp_err_t err = gpio_set_level(m_pin_, gpio_level);
+            if (err != ESP_OK)
+            {
+                ESP_LOGE(LOG_TAG, "Failed to set GPIO %d level: %s", m_pin_, esp_err_to_name(err));
+                return;
+            }
         }
     }
 }
