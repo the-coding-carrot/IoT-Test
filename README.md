@@ -14,8 +14,6 @@ The system monitors the distance from the top of a mailbox to the floor. When ma
 4. **Detection algorithm** identifies persistent distance changes (mail delivery/collection)
 5. **Telemetry system** logs events and periodic status updates
 
-See the [Detection Logic Explanation](docs/detection_logic.md) for detailed information.
-
 ## Hardware Requirements
 
 - ESP32 development board
@@ -227,13 +225,14 @@ The onboard LED provides visual feedback of system status:
 
 ## State Machine Behavior
 
-```
-EMPTY → (mail arrives) → HAS_MAIL → (more mail) → FULL
-  ↑                         ↓                        ↓
-  |                    (mail collected)         (mail collected)
-  |                         ↓                        ↓
-  └─────────────────── EMPTIED ←───────────────────┘
-          (wait 250ms)
+```mermaid
+stateDiagram-v2
+    [*] --> EMPTY
+    EMPTY --> HAS_MAIL: Mail arrives
+    HAS_MAIL --> FULL: More mail
+    HAS_MAIL --> EMPTIED: Mail collected
+    FULL --> EMPTIED: Mail collected
+    EMPTIED --> EMPTY: Wait 250ms
 ```
 
 **Key insight**: Once mail is detected, the system enters HAS_MAIL or FULL state and will NOT trigger another `mail_drop` event until the mailbox is emptied. This prevents false duplicate events from mail sitting in the box.
