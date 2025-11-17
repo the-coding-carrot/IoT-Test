@@ -6,13 +6,11 @@
 
 #include <utility>
 
-static const char *LOG_TAG = "LED";
-
 namespace Hardware
 {
     namespace Led
     {
-        LED::LED(gpio_num_t gpio_pin, bool active_low)
+        LED::LED(const gpio_num_t gpio_pin, const bool active_low)
             : m_pin_(gpio_pin), m_is_on_(false), m_active_low_(active_low), m_initialized_(false)
         {
             ESP_LOGI(LOG_TAG, "Creating LED on GPIO %d (active %s)",
@@ -87,7 +85,7 @@ namespace Hardware
                 On();
         }
 
-        void LED::Blink(uint32_t count, uint32_t interval_ms)
+        void LED::Blink(const uint32_t count, const uint32_t interval_ms)
         {
             for (uint32_t i = 0; i < count; ++i)
             {
@@ -119,7 +117,7 @@ namespace Hardware
             ESP_LOGI(LOG_TAG, "GPIO %d initialized successfully", m_pin_);
         }
 
-        void LED::setGpioLevel(bool logical_state)
+        void LED::setGpioLevel(const bool logical_state)
         {
             // Convert logical state to physical GPIO level based on polarity
             uint32_t gpio_level = (logical_state == m_active_low_) ? 0 : 1;

@@ -16,7 +16,7 @@ namespace Hardware
              * @param trigger_pin GPIO pin connected to trigger
              * @param echo_pin GPIO pin connected to echo
              */
-            HCSR04(gpio_num_t trigger_pin, gpio_num_t echo_pin);
+            HCSR04(const gpio_num_t trigger_pin, const gpio_num_t echo_pin);
 
             /**
              * @brief Measure distance in centimeters:
@@ -27,9 +27,11 @@ namespace Hardware
              * @param timeout_us Maximum time to wait for echo
              * @return Distance in cm, or -1 on timeout/error
              */
-            float MeasureDistance(uint32_t timeout_us);
+            float MeasureDistance(const uint32_t timeout_us);
 
         private:
+            static constexpr const char *LOG_TAG = "HCSR04";
+
             gpio_num_t trigger_pin_; ///< GPIO TRIGGER (Output) pin number
             gpio_num_t echo_pin_;    ///< GPIO ECHO (Input) pin number
 
@@ -49,8 +51,9 @@ namespace Hardware
              *
              * @param echo_start Start of the pulse
              * @param echo_end End of the Pulse
+             * @return Distance in cm, or -1 on timeout/error
              */
-            float calculateDistance(uint64_t echo_start, uint64_t echo_end);
+            float calculateDistance(const uint64_t &echo_start, const uint64_t &echo_end);
 
             /**
              * @brief Set the physical GPIO level of a pin
@@ -58,7 +61,7 @@ namespace Hardware
              * @param gpio_pin The GPIO pin to be set
              * @param level The GPIO level
              */
-            void setGpioLevel(gpio_num_t gpio_pin, uint32_t level);
+            void setGpioLevel(const gpio_num_t gpio_pin, const uint32_t level);
         };
     }
 }

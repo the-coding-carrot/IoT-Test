@@ -6,13 +6,11 @@
 #include "esp_rom_sys.h"
 #include "esp_log.h"
 
-static const char *LOG_TAG = "HCSR04";
-
 namespace Hardware
 {
     namespace Ultrasonic
     {
-        HCSR04::HCSR04(gpio_num_t trigger_pin, gpio_num_t echo_pin)
+        HCSR04::HCSR04(const gpio_num_t trigger_pin, const gpio_num_t echo_pin)
             : trigger_pin_(trigger_pin), echo_pin_(echo_pin)
         {
             configureTriggerGpio();
@@ -21,7 +19,7 @@ namespace Hardware
             ESP_LOGI(LOG_TAG, "HC-SR04 configured");
         }
 
-        float HCSR04::MeasureDistance(uint32_t timeout_us)
+        float HCSR04::MeasureDistance(const uint32_t timeout_us)
         {
             // Send trigger pulse
             setGpioLevel(trigger_pin_, 1);
@@ -54,7 +52,7 @@ namespace Hardware
             return calculateDistance(echo_start, echo_end);
         }
 
-        float HCSR04::calculateDistance(uint64_t echo_start, uint64_t echo_end)
+        float HCSR04::calculateDistance(const uint64_t &echo_start, const uint64_t &echo_end)
         {
             float pulse_duration = (float)(echo_end - echo_start);
             float distance = (pulse_duration * 0.0343f) / 2.0f;
@@ -108,7 +106,7 @@ namespace Hardware
             ESP_LOGI(LOG_TAG, "Echo GPIO %d configured", echo_pin_);
         }
 
-        void HCSR04::setGpioLevel(gpio_num_t gpio_pin, uint32_t level)
+        void HCSR04::setGpioLevel(const gpio_num_t gpio_pin, const uint32_t level)
         {
             esp_err_t err = gpio_set_level(gpio_pin, level);
             if (err != ESP_OK)

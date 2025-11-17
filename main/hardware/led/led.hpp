@@ -17,7 +17,7 @@ namespace Hardware
              * @param gpio_pin The GPIO pin number where the LED is connected
              * @param active_low If true, LED is on when pin is LOW (default: true)
              */
-            explicit LED(gpio_num_t gpio_pin, bool active_low = true);
+            explicit LED(const gpio_num_t gpio_pin, const bool active_low = true);
 
             /**
              * @brief Destroy the LED object
@@ -55,9 +55,11 @@ namespace Hardware
              * @param count Number of blinks
              * @param interval_ms Interval time between Toggling (milliseconds)
              */
-            void Blink(uint32_t count, uint32_t interval_ms);
+            void Blink(const uint32_t count, const uint32_t interval_ms);
 
         private:
+            static constexpr const char *LOG_TAG = "LED";
+
             gpio_num_t m_pin_;   ///< GPIO pin number
             bool m_is_on_;       ///< Current LED state
             bool m_active_low_;  ///< LED polarity (true = active low)
@@ -73,7 +75,7 @@ namespace Hardware
              *
              * @param logical_state The logical state (true = on, false = off)
              */
-            void setGpioLevel(bool logical_state);
+            void setGpioLevel(const bool logical_state);
         };
     }
 }
