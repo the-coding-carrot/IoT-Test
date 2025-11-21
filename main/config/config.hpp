@@ -33,4 +33,11 @@ namespace Config
     constexpr uint8_t FILTER_WINDOW = 5; ///< Number of samples in the median filter sliding window
 
     constexpr uint32_t TELEMETRY_PERIOD_MS = 10000; ///< Time interval for periodic telemetry broadcasts (milliseconds)
+
+    constexpr const char *MQTT_BROKER_URI = "mqtt://192.168.1.100:1883"; ///< MQTT broker
+    constexpr const char *MQTT_BASE_TOPIC = "home/mailbox";              ///< Base topic prefix
+    constexpr const char *MQTT_CLIENT_ID = "mailbox-sensor-001";         ///< Unique client ID
+
+    constexpr const char *CONN_SSID = "Test"; ///< Wifi Connection SSID
+    constexpr const char *PASSWORD = "Test";  ///< Wifi Connection Password
 }

@@ -6,6 +6,7 @@
 #include "esp_timer.h"
 #include "esp_log.h"
 
+#include "../publisher/mqtt.hpp"
 #include "../../config/config.hpp"
 #include "../../processor/distance/distance_processor.hpp"
 
@@ -22,6 +23,28 @@ namespace Telemetry
              * Initializes timing state and logs configuration.
              */
             DistanceTelemetry();
+
+            /**
+             * @brief Initialize MQTT publishing for distance telemetry
+             *
+             * Sets up MQTT connection and configures the base topic for all telemetry messages.
+             * Messages will be published to subtopics under the base topic:
+             * - {base_topic}/events/mail_drop
+             * - {base_topic}/events/mail_collected
+             * - {base_topic}/status
+             *
+             * @param broker_uri Full URI of MQTT broker (e.g., "mqtt://broker.hivemq.com:1883")
+             * @param base_topic Base MQTT topic prefix (e.g., "mailbox/sensor001")
+             * @param client_id Unique client identifier (optional)
+             * @param username MQTT broker username (optional)
+             * @param password MQTT broker password (optional)
+             * @return esp_err_t ESP_OK on success, error code otherwise
+             */
+            esp_err_t InitMQTT(const char *broker_uri,
+                               const char *base_topic,
+                               const char *client_id = nullptr,
+                               const char *username = nullptr,
+                               const char *password = nullptr);
 
             /**
              * @brief Publish telemetry based on processed distance data
@@ -42,9 +65,11 @@ namespace Telemetry
                          const float baseline_cm, const float threshold_cm);
 
         private:
-            static constexpr const char *LOG_TAG = "DIST_TELE";
+            static constexpr const char *LOG_TAG = "DTELE";
 
-            uint64_t last_telemetry_us_ = 0; ///< Timestamp of last periodic telemetry emission (microseconds)
+            uint64_t last_telemetry_us_ = 0;      ///< Timestamp of last periodic telemetry emission (microseconds)
+            MQTT::MQTTPublisher *mqtt_publisher_; ///< Pointer to MQTT publisher instance (NULL if not initialized)
+            char base_topic_[64];                 ///< Base MQTT topic for all telemetry messages
 
             /**
              * @brief Emit mail drop event telemetry immediately
@@ -122,14 +147,16 @@ namespace Telemetry
             const char *stateToString(const Processor::Distance::MailboxState state) const;
 
             /**
-             * @brief Publish JSON object to output stream
+             * @brief Publish JSON object via MQTT and log to console
              *
-             * Serializes JSON to compact string format and logs via ESP_LOGI.
-             * Properly cleans up allocated memory.
+             * Converts cJSON object to unformatted string, logs it, and publishes
+             * to the MQTT topic constructed from base_topic + subtopic.
+             * Automatically frees the cJSON object after publishing.
              *
-             * @param root cJSON object to publish (ownership transferred, will be deleted)
+             * @param root cJSON object to publish (will be deleted after use)
+             * @param subtopic Subtopic to append to base topic (default: "telemetry")
              */
-            void publishJSON(cJSON *root);
+            void publishJSON(cJSON *root, const char *subtopic = "telemetry");
         };
     }
 }

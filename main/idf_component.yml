@@ -1,2 +1,4 @@
+# main/idf_component.yml
 dependencies:
-  espressif/cjson: "^1"
+  idf: ">=5.0"          # require a compatible ESP-IDF
+  espressif/cjson: "^1" # what you already have

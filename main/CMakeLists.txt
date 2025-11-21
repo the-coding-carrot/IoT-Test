@@ -5,6 +5,7 @@ set(COMPONENT_SRCS
     "hardware/ultrasonic/hcsr04.cpp"
     "telemetry/distance/distance_telemetry.cpp"
     "processor/distance/distance_processor.cpp"
+    "telemetry/publisher/mqtt.cpp"
 )
 
 # Public include directories
@@ -14,6 +15,7 @@ set(COMPONENT_INCLUDE_DIRS
     "hardware/ultrasonic"
     "telemetry/distance"
     "processor/distance"
+    "telemetry/publisher"
     "config"
 )
 
@@ -25,6 +27,11 @@ idf_component_register(
         driver
         esp_timer
         cjson
+        mqtt
+        nvs_flash
+        esp_wifi
+        esp_event
+        esp_netif
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE

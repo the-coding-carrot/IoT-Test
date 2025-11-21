@@ -6,7 +6,35 @@ namespace Telemetry
     {
         DistanceTelemetry::DistanceTelemetry()
         {
+            base_topic_[0] = '\0';
             ESP_LOGI(LOG_TAG, "Telemetry initialized. period=%u ms", Config::TELEMETRY_PERIOD_MS);
+        }
+
+        esp_err_t DistanceTelemetry::InitMQTT(const char *broker_uri,
+                                              const char *base_topic,
+                                              const char *client_id,
+                                              const char *username,
+                                              const char *password)
+        {
+            mqtt_publisher_ = new MQTT::MQTTPublisher();
+            if (!mqtt_publisher_)
+            {
+                ESP_LOGE(LOG_TAG, "Failed to allocate MQTT publisher");
+                return ESP_ERR_NO_MEM;
+            }
+
+            strncpy(base_topic_, base_topic, sizeof(base_topic_) - 1);
+            base_topic_[sizeof(base_topic_) - 1] = '\0';
+
+            esp_err_t err = mqtt_publisher_->Init(broker_uri, client_id, username, password);
+            if (err != ESP_OK)
+            {
+                delete mqtt_publisher_;
+                mqtt_publisher_ = nullptr;
+                return err;
+            }
+
+            return mqtt_publisher_->Start();
         }
 
         void DistanceTelemetry::Publish(const Processor::Distance::DistanceData &data,
@@ -41,7 +69,7 @@ namespace Telemetry
             cJSON_AddNumberToObject(root, "success_rate", data.success_rate);
             cJSON_AddStringToObject(root, "new_state", stateToString(data.state));
 
-            publishJSON(root);
+            publishJSON(root, "events/mail_drop");
         }
 
         void DistanceTelemetry::emitMailCollectedEvent(const Processor::Distance::DistanceData &data, const float &baseline_cm)
@@ -59,7 +87,7 @@ namespace Telemetry
             cJSON_AddNumberToObject(root, "success_rate", data.success_rate);
             cJSON_AddStringToObject(root, "new_state", stateToString(data.state));
 
-            publishJSON(root);
+            publishJSON(root, "events/mail_collected");
         }
 
         void DistanceTelemetry::maybeEmitPeriodic(const Processor::Distance::DistanceData &data,
@@ -82,7 +110,7 @@ namespace Telemetry
                 cJSON_AddNumberToObject(root, "success_rate", data.success_rate);
                 cJSON_AddStringToObject(root, "mailbox_state", stateToString(data.state));
 
-                publishJSON(root);
+                publishJSON(root, "status");
                 last_telemetry_us_ = now_us;
             }
         }
@@ -114,13 +142,21 @@ namespace Telemetry
             }
         }
 
-        void DistanceTelemetry::publishJSON(cJSON *root)
+        void DistanceTelemetry::publishJSON(cJSON *root, const char *subtopic)
         {
             char *json = cJSON_PrintUnformatted(root);
             if (json)
             {
                 ESP_LOGI(LOG_TAG, "%s", json);
-                // TODO: publish json via MQTT/HTTP here
+
+                // Publish via MQTT if connected
+                if (mqtt_publisher_ && mqtt_publisher_->IsConnected())
+                {
+                    char topic[128];
+                    snprintf(topic, sizeof(topic), "%s/%s", base_topic_, subtopic);
+                    mqtt_publisher_->Publish(topic, json);
+                }
+
                 cJSON_free(json);
             }
             cJSON_Delete(root);
