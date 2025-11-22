@@ -359,7 +359,7 @@ idf.py flash monitor
 
 ### MQTT Connection Issues
 
-- **Cannot connect**: Verify broker URI, check network connectivity
+- **Cannot connect**: Verify broker URI, check network connectivity (ESP only works with 2.4 GHz)
 - **Connection drops**: Check keepalive settings, verify WiFi signal strength
 - **Messages not publishing**: Ensure `isConnected()` returns true, check topic permissions
 
