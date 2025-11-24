@@ -2,6 +2,8 @@
 
 An ESP32-based smart mailbox system that detects mail delivery and collection using an HC-SR04 ultrasonic distance sensor. It features a robust, non-blocking architecture that ensures the sensor continues to operate and provide visual feedback even if Wi-Fi is unavailable.
 
+![Logo](docs/IoT_Value_Stack.png)
+
 ## Overview
 
 The system monitors the distance from the top of a mailbox to the floor. When mail is delivered, the distance decreases, triggering a detection event. A state machine tracks mailbox status (empty, has mail, full, emptied) to prevent false duplicate events.
