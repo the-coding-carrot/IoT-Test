@@ -11,14 +11,6 @@ namespace Config
     constexpr const char *APP_VERSION = "1.0.0"; // Application version
 
     // ──────────────────────────────
-    // LED Settings
-    // ──────────────────────────────
-    constexpr gpio_num_t LED_PIN = GPIO_NUM_2;  // Built-in LED on many ESP32-WROOM-32 boards
-    constexpr bool LED_ACTIVE_LOW = false;      // ESP32-WROOM-32 typically active high
-    constexpr uint32_t STARTUP_BLINK_COUNT = 5; // Number of startup blinks
-    constexpr uint32_t STARTUP_BLINK_MS = 1000; // Blink duration (ms)
-
-    // ──────────────────────────────
     // Ultrasonic Sensor (HC-SR04)
     // ──────────────────────────────
     constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_5;       // Trigger pin (output)

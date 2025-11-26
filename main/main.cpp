@@ -1,5 +1,4 @@
 #include "config/config.hpp"
-#include "hardware/led/led.hpp"
 #include "hardware/ultrasonic/hcsr04.hpp"
 #include "processor/distance/distance_processor.hpp"
 #include "telemetry/distance/distance_telemetry.hpp"
@@ -103,7 +102,6 @@ extern "C" void app_main(void)
     }
 
     // Initialize Hardware
-    Hardware::Led::LED led(Config::LED_PIN, Config::LED_ACTIVE_LOW);
     Hardware::Ultrasonic::HCSR04 ultrasonic(Config::HCSR04_TRIGGER_PIN, Config::HCSR04_ECHO_PIN);
 
     // Restore Processor from RTC
@@ -126,7 +124,6 @@ extern "C" void app_main(void)
     if (crucial_event || periodic_update)
     {
         ESP_LOGI(LOG_TAG, "Connecting to report event (Event=%d, Periodic=%d)...", crucial_event, periodic_update);
-        led.On();
 
         if (connect_wifi_blocking())
         {
@@ -148,8 +145,6 @@ extern "C" void app_main(void)
         {
             ESP_LOGW(LOG_TAG, "WiFi connection failed - telemetry skipped");
         }
-
-        led.Off();
     }
 
     // Save State Back to RTC
