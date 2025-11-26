@@ -38,7 +38,15 @@ target_compile_options(${COMPONENT_LIB} PRIVATE
     -Wno-unused-function
     -fno-exceptions 
     -fno-rtti 
-    -fmerge-all-constants  
+    -fmerge-all-constants
+    -Os
+    -ffunction-sections
+    -fdata-sections
+    -Wno-array-bounds
+)
+
+target_link_options(${COMPONENT_LIB} PRIVATE
+    -Wl,--gc-sections
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

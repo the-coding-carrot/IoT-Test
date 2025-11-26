@@ -1,43 +1,62 @@
 #pragma once
 
 #include "driver/gpio.h"
-#include "freertos/FreeRTOS.h"
 
-/**
- * @namespace Config
- * @brief Global configuration constants for the IoT mailbox monitoring system
- */
 namespace Config
 {
-    constexpr const char *APP_NAME = "IoT Test"; ///< Application name for logging
-    constexpr const char *APP_VERSION = "1.0.0"; ///< Application version
+    // ──────────────────────────────
+    // Application Info
+    // ──────────────────────────────
+    constexpr const char *APP_NAME = "IoT Test"; // Application name
+    constexpr const char *APP_VERSION = "1.0.0"; // Application version
 
-    constexpr gpio_num_t LED_PIN = GPIO_NUM_8;  ///< GPIO pin number for the onboard status LED
-    constexpr bool LED_ACTIVE_LOW = true;       ///< LED polarity (true = active low, false = active high)
-    constexpr uint32_t STARTUP_BLINK_COUNT = 5; ///< Number of startup blinks (visual indicator)
-    constexpr uint32_t STARTUP_BLINK_MS = 1000; ///< Startup blink timing (milliseconds)
+    // ──────────────────────────────
+    // LED Settings
+    // ──────────────────────────────
+    constexpr gpio_num_t LED_PIN = GPIO_NUM_8;  // Status LED pin
+    constexpr bool LED_ACTIVE_LOW = true;       // true = active low
+    constexpr uint32_t STARTUP_BLINK_COUNT = 5; // Number of startup blinks
+    constexpr uint32_t STARTUP_BLINK_MS = 1000; // Blink duration (ms)
 
-    constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_2; ///< GPIO pin connected to HC-SR04 TRIGGER (output from ESP32)
-    constexpr gpio_num_t HCSR04_ECHO_PIN = GPIO_NUM_3;    ///< GPIO pin connected to HC-SR04 ECHO (input to ESP32)
+    // ──────────────────────────────
+    // Ultrasonic Sensor (HC-SR04)
+    // ──────────────────────────────
+    constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_2;       // Trigger pin (output)
+    constexpr gpio_num_t HCSR04_ECHO_PIN = GPIO_NUM_3;          // Echo pin (input)
+    constexpr uint32_t DISTANCE_MEASUREMENT_INTERVAL_MS = 1000; // Measurement interval (ms)
+    constexpr uint32_t TRIGGER_PULSE_uS = 10;                   // Trigger pulse duration (µs)
+    constexpr float DISTANCE_THRESHOLD_CM = 400.0f;             // Max valid distance (cm)
+    constexpr uint32_t ECHO_TIMEOUT_US = 35000;                 // Echo timeout (µs)
 
-    constexpr uint32_t DISTANCE_MEASUREMENT_INTERVAL_MS = 1000; ///< Time interval between consecutive distance measurements (milliseconds)
-    constexpr uint32_t TRIGGER_PULSE_uS = 10;                   ///< Duration of trigger pulse sent to HC-SR04 (microseconds)
-    constexpr float DISTANCE_THRESHOLD_CM = 400.0f;             ///< Maximum valid distance measurement threshold (centimeters)
-    constexpr uint32_t ECHO_TIMEOUT_MS = 35000;                 ///< Maximum time to wait for echo pulse response (microseconds)
+    // ──────────────────────────────
+    // Mailbox Detection Logic
+    // ──────────────────────────────
+    constexpr float BASELINE_CM = 40.0f;     // Empty mailbox baseline (cm)
+    constexpr float TRIGGER_DELTA_CM = 3.0f; // Min change to detect occlusion (cm)
+    constexpr uint32_t HOLD_MS = 250;        // Occlusion hold time (ms)
+    constexpr uint32_t REFRACTORY_MS = 8000; // Refractory period after detection (ms)
 
-    constexpr float BASELINE_CM = 40.0f;     ///< Baseline distance representing an empty mailbox (centimeters)
-    constexpr float TRIGGER_DELTA_CM = 3.0f; ///< Minimum distance change required to trigger occlusion detection (centimeters)
-    constexpr uint32_t HOLD_MS = 250;        ///< Minimum duration an occlusion must persist to generate a mail drop event (milliseconds)
-    constexpr uint32_t REFRACTORY_MS = 8000; ///< Refractory period after a detected mail drop (milliseconds)
+    // ──────────────────────────────
+    // Filtering
+    // ──────────────────────────────
+    constexpr uint8_t FILTER_WINDOW = 5; // Median filter window size
 
-    constexpr uint8_t FILTER_WINDOW = 5; ///< Number of samples in the median filter sliding window
+    // ──────────────────────────────
+    // MQTT Settings
+    // ──────────────────────────────
+    constexpr const char *MQTT_BROKER_URI = "mqtt://192.168.1.100:1883"; // Broker URI
+    constexpr const char *MQTT_BASE_TOPIC = "home/mailbox";              // Base topic
+    constexpr const char *MQTT_CLIENT_ID = "mailbox-sensor-001";         // Client ID
 
-    constexpr uint32_t TELEMETRY_PERIOD_MS = 10000; ///< Time interval for periodic telemetry broadcasts (milliseconds)
+    // ──────────────────────────────
+    // Wi-Fi Settings
+    // ──────────────────────────────
+    constexpr const char *CONN_SSID = "Test"; // Wi-Fi SSID
+    constexpr const char *PASSWORD = "Test";  // Wi-Fi password
 
-    constexpr const char *MQTT_BROKER_URI = "mqtt://192.168.1.100:1883"; ///< MQTT broker
-    constexpr const char *MQTT_BASE_TOPIC = "home/mailbox";              ///< Base topic prefix
-    constexpr const char *MQTT_CLIENT_ID = "mailbox-sensor-001";         ///< Unique client ID
-
-    constexpr const char *CONN_SSID = "Test"; ///< Wifi Connection SSID
-    constexpr const char *PASSWORD = "Test";  ///< Wifi Connection Password
+    // ──────────────────────────────
+    // Power Management
+    // ──────────────────────────────
+    constexpr uint64_t DEEP_SLEEP_US = 5000000;       // Deep sleep duration (µs)
+    constexpr uint64_t HEARTBEAT_INTERVAL_SEC = 3600; // Heartbeat interval (s)
 }

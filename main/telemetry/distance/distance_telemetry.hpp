@@ -17,28 +17,17 @@ namespace Telemetry
         class DistanceTelemetry
         {
         public:
-            /**
-             * @brief Construct a new Distance Telemetry publisher
-             *
-             * Initializes timing state and logs configuration.
-             */
+            // Construct a new Distance Telemetry publisher
             DistanceTelemetry();
 
             /**
-             * @brief Initialize MQTT publishing for distance telemetry
+             * Initialize MQTT publishing for distance telemetry
              *
              * Sets up MQTT connection and configures the base topic for all telemetry messages.
              * Messages will be published to subtopics under the base topic:
              * - {base_topic}/events/mail_drop
              * - {base_topic}/events/mail_collected
              * - {base_topic}/status
-             *
-             * @param broker_uri Full URI of MQTT broker (e.g., "mqtt://broker.hivemq.com:1883")
-             * @param base_topic Base MQTT topic prefix (e.g., "mailbox/sensor001")
-             * @param client_id Unique client identifier (optional)
-             * @param username MQTT broker username (optional)
-             * @param password MQTT broker password (optional)
-             * @return esp_err_t ESP_OK on success, error code otherwise
              */
             esp_err_t InitMQTT(const char *broker_uri,
                                const char *base_topic,
@@ -47,19 +36,12 @@ namespace Telemetry
                                const char *password = nullptr);
 
             /**
-             * @brief Publish telemetry based on processed distance data
+             * Publish telemetry based on processed distance data
              *
              * Determines what telemetry to emit:
              * - If mail detected: Immediately publish mail_drop event
              * - If mail collected: Immediately publish mail_collected event
              * - If periodic interval elapsed: Publish status telemetry with current state
-             *
-             * @param data Processed distance data from DistanceProcessor
-             * @param baseline_cm Current baseline distance (for context)
-             * @param threshold_cm Current trigger threshold (for context)
-             *
-             * @note Can publish multiple telemetry messages in same call
-             * @note Non-blocking: Returns immediately after logging
              */
             void Publish(const Processor::Distance::DistanceData &data,
                          const float baseline_cm, const float threshold_cm);
@@ -72,7 +54,7 @@ namespace Telemetry
             char base_topic_[64];                 ///< Base MQTT topic for all telemetry messages
 
             /**
-             * @brief Emit mail drop event telemetry immediately
+             * Emit mail drop event telemetry immediately
              *
              * Constructs JSON payload with:
              * - Event type: "mail_drop"
@@ -81,16 +63,11 @@ namespace Telemetry
              * - Computed confidence score
              * - Current success rate
              * - New mailbox state (HAS_MAIL or FULL)
-             *
-             * @param data Processed distance data containing detection results
-             * @param baseline_cm Baseline distance for before/after comparison
-             *
-             * @note Always publishes when called (not rate-limited)
              */
             void emitMailDropEvent(const Processor::Distance::DistanceData &data, const float &baseline_cm);
 
             /**
-             * @brief Emit mail collected event telemetry immediately
+             * Emit mail collected event telemetry immediately
              *
              * Constructs JSON payload with:
              * - Event type: "mail_collected"
@@ -98,64 +75,35 @@ namespace Telemetry
              * - Delta and duration of collection
              * - Current success rate
              * - New mailbox state (EMPTIED)
-             *
-             * @param data Processed distance data containing collection results
-             * @param baseline_cm Baseline distance for reference
-             *
-             * @note Always publishes when called (not rate-limited)
              */
             void emitMailCollectedEvent(const Processor::Distance::DistanceData &data, const float &baseline_cm);
 
             /**
-             * @brief Conditionally emit periodic status telemetry
+             * Conditionally emit periodic status telemetry
              *
              * Publishes current system state at regular intervals for monitoring:
              * - Raw and filtered distance readings
              * - Baseline and threshold references
              * - Measurement success rate
              * - Current mailbox state (empty/has_mail/full/emptied)
-             *
-             * @param data Current processed distance data
-             * @param baseline_cm Current baseline distance
-             * @param threshold_cm Current trigger threshold
-             *
-             * @note Only publishes if TELEMETRY_PERIOD_MS has elapsed since last emission
-             * @note Updates last_telemetry_us_ timestamp when published
              */
             void maybeEmitPeriodic(const Processor::Distance::DistanceData &data,
                                    const float &baseline_cm, const float &threshold_cm);
 
             /**
-             * @brief Calculate confidence score for mail drop detection
+             * Calculate confidence score for mail drop detection
              *
              * Combines multiple factors into a single confidence metric [0.0, 1.0]:
              * - 50% weight: Distance delta relative to trigger threshold
              * - 30% weight: Occlusion duration relative to hold time
              * - 20% weight: Recent measurement success rate
-             *
-             * @param data Processed distance data with detection information
-             * @return Confidence score between 0.0 (low confidence) and 1.0 (high confidence)
              */
             float calculateConfidence(const Processor::Distance::DistanceData &data) const;
 
-            /**
-             * @brief Convert MailboxState enum to string representation
-             *
-             * @param state MailboxState enum value
-             * @return String representation: "empty", "has_mail", "full", "emptied", or "unknown"
-             */
+            // Convert MailboxState enum to string representation
             const char *stateToString(const Processor::Distance::MailboxState state) const;
 
-            /**
-             * @brief Publish JSON object via MQTT and log to console
-             *
-             * Converts cJSON object to unformatted string, logs it, and publishes
-             * to the MQTT topic constructed from base_topic + subtopic.
-             * Automatically frees the cJSON object after publishing.
-             *
-             * @param root cJSON object to publish (will be deleted after use)
-             * @param subtopic Subtopic to append to base topic (default: "telemetry")
-             */
+            // Publish JSON object via MQTT and log to console
             void publishJSON(cJSON *root, const char *subtopic = "telemetry");
         };
     }

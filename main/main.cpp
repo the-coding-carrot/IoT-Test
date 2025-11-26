@@ -4,155 +4,160 @@
 #include "processor/distance/distance_processor.hpp"
 #include "telemetry/distance/distance_telemetry.hpp"
 
+#include "esp_sleep.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_wifi.h"
-#include "esp_event.h"
 
-#include <atomic>
-#include <cstring>
+static const char *LOG_TAG = "MAIN";
 
-static const char *LOG_TAG = "APP";
-
-// Atomic flag to track Wi-Fi status without blocking the main loop
-std::atomic<bool> wifi_connected{false};
-
-// Event handler for Wi-Fi and IP events
-static void wifi_event_handler(void *arg, esp_event_base_t event_base,
-                               int32_t event_id, void *event_data)
+// This struct stays alive during deep sleep
+struct RtcStore
 {
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
-    {
-        esp_wifi_connect();
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
-    {
-        wifi_connected = false;
-        ESP_LOGW(LOG_TAG, "Wi-Fi disconnected, retrying...");
-        // continuous retry
-        esp_wifi_connect();
-    }
-    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
-    {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(LOG_TAG, "Wi-Fi Connected! IP: " IPSTR, IP2STR(&event->ip_info.ip));
-        wifi_connected = true;
-    }
-}
+    uint32_t boot_count;
+    Processor::Distance::StateContext processor_state;
+    uint64_t last_telemetry_time_sec;
+    uint64_t virtual_time_us;
+};
+RTC_DATA_ATTR RtcStore rtc_store;
 
-extern "C" void app_main(void)
+bool connect_wifi_blocking()
 {
-    ESP_LOGI(LOG_TAG, "%s v%s", Config::APP_NAME, Config::APP_VERSION);
-
-    // Initialize NVS (REQUIRED for Wi-Fi)
+    // Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
-    ESP_ERROR_CHECK(ret);
 
-    // Initialize Network (Non-blocking)
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_netif_init();
+    esp_event_loop_create_default();
     esp_netif_create_default_wifi_sta();
-
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL));
+    esp_wifi_init(&cfg);
 
     wifi_config_t wifi_config = {};
     strcpy((char *)wifi_config.sta.ssid, Config::CONN_SSID);
     strcpy((char *)wifi_config.sta.password, Config::PASSWORD);
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    esp_wifi_start();
+
+    ESP_LOGI(LOG_TAG, "Connecting to Wi-Fi...");
+    esp_wifi_connect();
+
+    // Wait for IP (Simple blocking wait)
+    int retries = 0;
+    while (retries < 100)
+    { // Wait up to ~10 seconds
+        esp_netif_ip_info_t ip_info;
+        esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+        if (netif)
+        {
+            if (esp_netif_get_ip_info(netif, &ip_info) == ESP_OK)
+            {
+                if (ip_info.ip.addr != 0)
+                    return true;
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+        retries++;
+    }
+    return false;
+}
+
+extern "C" void app_main(void)
+{
+    ESP_LOGI(LOG_TAG, "%s v%s", Config::APP_NAME, Config::APP_VERSION);
+
+    // Record wake time to calculate actual wake duration
+    uint64_t wake_time_start = esp_timer_get_time();
+
+    // Determine Wakeup Cause & Update Virtual Clock
+    bool is_fresh_boot = (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER);
+
+    if (is_fresh_boot)
+    {
+        ESP_LOGI(LOG_TAG, "Fresh Boot: Initializing State");
+        rtc_store.boot_count = 0;
+        Processor::Distance::DistanceProcessor temp;
+        rtc_store.processor_state = temp.GetContext();
+        rtc_store.last_telemetry_time_sec = 0; // Will force immediate heartbeat
+        rtc_store.virtual_time_us = 0;
+    }
+    else
+    {
+        rtc_store.boot_count++;
+        // Advance virtual clock by the sleep duration
+        rtc_store.virtual_time_us += Config::DEEP_SLEEP_US;
+        ESP_LOGI(LOG_TAG, "Wakeup #%lu (Virtual Time: %llu s)",
+                 rtc_store.boot_count,
+                 rtc_store.virtual_time_us / 1000000ULL);
+    }
 
     // Initialize Hardware
     Hardware::Led::LED led(Config::LED_PIN, Config::LED_ACTIVE_LOW);
-    ESP_LOGI(LOG_TAG, "Performing startup blink sequence...");
-    led.Blink(Config::STARTUP_BLINK_COUNT, Config::STARTUP_BLINK_MS);
+    Hardware::Ultrasonic::HCSR04 ultrasonic(Config::HCSR04_TRIGGER_PIN, Config::HCSR04_ECHO_PIN);
 
-    Hardware::Ultrasonic::HCSR04 ultrasonic(
-        Config::HCSR04_TRIGGER_PIN,
-        Config::HCSR04_ECHO_PIN);
+    // Restore Processor from RTC
+    Processor::Distance::DistanceProcessor processor(rtc_store.processor_state);
 
-    Processor::Distance::DistanceProcessor distanceProcessor;
-    Telemetry::Distance::DistanceTelemetry distanceTelemetry;
+    float raw_dist = ultrasonic.MeasureDistance(Config::ECHO_TIMEOUT_US);
 
-    // Initialize MQTT
-    // (Safe to do even if Wi-Fi isn't connected yet; ESP-IDF client handles reconnection)
-    esp_err_t err = distanceTelemetry.InitMQTT(
-        Config::MQTT_BROKER_URI,
-        Config::MQTT_BASE_TOPIC,
-        Config::MQTT_CLIENT_ID,
-        nullptr,
-        nullptr);
+    // Pass the virtual time to the processor
+    Processor::Distance::DistanceData data = processor.Process(raw_dist, rtc_store.virtual_time_us);
 
-    if (err == ESP_OK)
-        ESP_LOGI(LOG_TAG, "MQTT client started (background)");
-    else
-        ESP_LOGE(LOG_TAG, "Failed to start MQTT client");
+    ESP_LOGI(LOG_TAG, "Dist: %.1f cm | State: %d", data.filtered_cm, (int)data.state);
 
-    ESP_LOGI(LOG_TAG, "Entering measurement loop...");
+    // Evaluate if we need to wake up the radio
+    bool crucial_event = data.mail_detected || data.mail_collected;
 
-    while (true)
+    // Check for periodic update using virtual time in seconds
+    uint64_t virtual_time_sec = rtc_store.virtual_time_us / 1000000ULL;
+    bool periodic_update = (virtual_time_sec >= (rtc_store.last_telemetry_time_sec + Config::HEARTBEAT_INTERVAL_SEC));
+
+    if (crucial_event || periodic_update)
     {
-        float raw_distance = ultrasonic.MeasureDistance(Config::ECHO_TIMEOUT_MS);
+        ESP_LOGI(LOG_TAG, "Connecting to report event (Event=%d, Periodic=%d)...", crucial_event, periodic_update);
+        led.On();
 
-        Processor::Distance::DistanceData distanceData = distanceProcessor.Process(raw_distance);
+        if (connect_wifi_blocking())
+        {
+            Telemetry::Distance::DistanceTelemetry telemetry;
+            telemetry.InitMQTT(Config::MQTT_BROKER_URI, Config::MQTT_BASE_TOPIC, Config::MQTT_CLIENT_ID, nullptr, nullptr);
 
-        // Visual Feedback
-        if (distanceData.mail_detected)
-        {
-            led.Blink(10, 100);
-        }
-        else if (distanceData.mail_collected)
-        {
-            led.Blink(5, 200);
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            telemetry.Publish(data, processor.GetBaseline(), processor.GetThreshold());
+            vTaskDelay(pdMS_TO_TICKS(1000));
+
+            esp_wifi_disconnect();
+            esp_wifi_stop();
+
+            // Update last telemetry time after successful transmission
+            if (periodic_update)
+                rtc_store.last_telemetry_time_sec = virtual_time_sec;
         }
         else
         {
-            // State-based indicators
-            switch (distanceData.state)
-            {
-            case Processor::Distance::MailboxState::EMPTY:
-                if (distanceProcessor.InRefractory())
-                    led.Blink(2, 300);
-                else if (distanceData.success_rate < 0.8f)
-                    led.Blink(1, 1000); // Warning: Sensor obscured or failing
-                else if (!wifi_connected)
-                    led.Blink(1, 50); // Very brief blip if No Wi-Fi
-                else
-                    led.Off(); // Normal idle state
-                break;
-
-            case Processor::Distance::MailboxState::HAS_MAIL:
-                led.Blink(1, 500);
-                break;
-
-            case Processor::Distance::MailboxState::FULL:
-                led.On();
-                break;
-
-            case Processor::Distance::MailboxState::EMPTIED:
-                led.Blink(3, 150);
-                break;
-            }
+            ESP_LOGW(LOG_TAG, "WiFi connection failed - telemetry skipped");
         }
 
-        // Publish Telemetry
-        // (Internally checks if MQTT is connected before sending)
-        distanceTelemetry.Publish(distanceData,
-                                  distanceProcessor.GetBaseline(),
-                                  distanceProcessor.GetThreshold());
-
-        vTaskDelay(pdMS_TO_TICKS(Config::DISTANCE_MEASUREMENT_INTERVAL_MS));
+        led.Off();
     }
 
-    ESP_LOGI(LOG_TAG, "Application terminated");
+    // Save State Back to RTC
+    rtc_store.processor_state = processor.GetContext();
+
+    // Calculate actual wake duration and add to virtual time
+    uint64_t wake_duration_us = esp_timer_get_time() - wake_time_start;
+    rtc_store.virtual_time_us += wake_duration_us;
+
+    ESP_LOGI(LOG_TAG, "Awake for %llu ms, entering deep sleep for %.1f s",
+             wake_duration_us / 1000ULL,
+             Config::DEEP_SLEEP_US / 1000000.0);
+
+    esp_sleep_enable_timer_wakeup(Config::DEEP_SLEEP_US);
+    esp_deep_sleep_start();
 }

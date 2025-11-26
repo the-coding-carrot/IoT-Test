@@ -26,13 +26,16 @@ namespace Hardware
             esp_rom_delay_us(Config::TRIGGER_PULSE_uS);
             setGpioLevel(trigger_pin_, 0);
 
+            // Small stabilization delay for sensor to process trigger
+            esp_rom_delay_us(2);
+
             // Wait for echo to go high
-            uint32_t start_wait = esp_timer_get_time();
+            uint64_t start_wait = esp_timer_get_time();
             while (gpio_get_level(echo_pin_) == 0)
             {
                 if ((esp_timer_get_time() - start_wait) > timeout_us)
                 {
-                    ESP_LOGW(LOG_TAG, "Timed Out waiting for Echo");
+                    ESP_LOGW(LOG_TAG, "Timed out waiting for echo");
                     return -1.0f;
                 }
             }
@@ -43,7 +46,7 @@ namespace Hardware
             {
                 if ((esp_timer_get_time() - echo_start) > timeout_us)
                 {
-                    ESP_LOGW(LOG_TAG, "Timed Out measuring echo pulse width");
+                    ESP_LOGW(LOG_TAG, "Timed out measuring echo pulse width");
                     return -1.0f;
                 }
             }
@@ -57,12 +60,21 @@ namespace Hardware
             float pulse_duration = (float)(echo_end - echo_start);
             float distance = (pulse_duration * 0.0343f) / 2.0f;
 
-            if (distance < 0)
-                ESP_LOGE(LOG_TAG, "Measurement error");
+            // Validate reading range (HC-SR04 typical range: 2cm - 400cm)
+            if (distance < 2.0f)
+            {
+                ESP_LOGW(LOG_TAG, "Distance below minimum range: %.2f cm", distance);
+                return -1.0f;
+            }
             else if (distance >= Config::DISTANCE_THRESHOLD_CM)
-                ESP_LOGW(LOG_TAG, "Distance Threshold achieved or surpassed: %.2f cm over the threshold", (distance - Config::DISTANCE_THRESHOLD_CM));
+            {
+                ESP_LOGW(LOG_TAG, "Distance threshold achieved or surpassed: %.2f cm over the threshold",
+                         (distance - Config::DISTANCE_THRESHOLD_CM));
+            }
             else
+            {
                 ESP_LOGI(LOG_TAG, "Distance: %.2f cm", distance);
+            }
 
             return distance;
         }

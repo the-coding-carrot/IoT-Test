@@ -7,7 +7,7 @@ namespace Telemetry
         DistanceTelemetry::DistanceTelemetry()
         {
             base_topic_[0] = '\0';
-            ESP_LOGI(LOG_TAG, "Telemetry initialized. period=%u ms", Config::TELEMETRY_PERIOD_MS);
+            ESP_LOGI(LOG_TAG, "Telemetry initialized.");
         }
 
         esp_err_t DistanceTelemetry::InitMQTT(const char *broker_uri,
@@ -94,25 +94,21 @@ namespace Telemetry
                                                   const float &baseline_cm, const float &threshold_cm)
         {
             const uint64_t now_us = esp_timer_get_time();
-            const uint64_t elapsed_ms = (now_us - last_telemetry_us_) / 1000ULL;
 
-            if (elapsed_ms >= Config::TELEMETRY_PERIOD_MS)
-            {
-                cJSON *root = cJSON_CreateObject();
-                if (!root)
-                    return;
+            cJSON *root = cJSON_CreateObject();
+            if (!root)
+                return;
 
-                cJSON_AddBoolToObject(root, "telemetry", true);
-                cJSON_AddNumberToObject(root, "distance_cm", data.raw_cm);
-                cJSON_AddNumberToObject(root, "filtered_cm", data.filtered_cm);
-                cJSON_AddNumberToObject(root, "baseline_cm", baseline_cm);
-                cJSON_AddNumberToObject(root, "threshold_cm", threshold_cm);
-                cJSON_AddNumberToObject(root, "success_rate", data.success_rate);
-                cJSON_AddStringToObject(root, "mailbox_state", stateToString(data.state));
+            cJSON_AddBoolToObject(root, "telemetry", true);
+            cJSON_AddNumberToObject(root, "distance_cm", data.raw_cm);
+            cJSON_AddNumberToObject(root, "filtered_cm", data.filtered_cm);
+            cJSON_AddNumberToObject(root, "baseline_cm", baseline_cm);
+            cJSON_AddNumberToObject(root, "threshold_cm", threshold_cm);
+            cJSON_AddNumberToObject(root, "success_rate", data.success_rate);
+            cJSON_AddStringToObject(root, "mailbox_state", stateToString(data.state));
 
-                publishJSON(root, "status");
-                last_telemetry_us_ = now_us;
-            }
+            publishJSON(root, "status");
+            last_telemetry_us_ = now_us;
         }
 
         float DistanceTelemetry::calculateConfidence(const Processor::Distance::DistanceData &data) const

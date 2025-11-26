@@ -93,7 +93,6 @@ namespace Telemetry
             }
 
             // Publish message to MQTT broker
-            // Parameters: client, topic, data, data_len (0 = use strlen), qos, retain (0 = don't retain)
             int msg_id = esp_mqtt_client_publish(client_, topic, json, 0, qos, 0);
             if (msg_id < 0)
             {
