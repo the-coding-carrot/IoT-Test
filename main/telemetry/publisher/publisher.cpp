@@ -1,10 +1,10 @@
-#include "mqtt.hpp"
+#include "publisher.hpp"
 
 #include "esp_log.h"
 
 namespace Telemetry
 {
-    namespace MQTT
+    namespace Publisher
     {
         MQTTPublisher::MQTTPublisher()
             : client_(nullptr), connected_(false)

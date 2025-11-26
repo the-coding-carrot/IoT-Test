@@ -20,6 +20,18 @@ namespace Config
     static constexpr uint32_t VL53L0X_TIMEOUT_MS = 200;
     static constexpr float DISTANCE_THRESHOLD_CM = 200.0f; // Max valid distance (cm)
 
+    /*
+    // ──────────────────────────────
+    // Ultrasonic Sensor (HC-SR04)
+    // ──────────────────────────────
+    constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_5;       // Trigger pin (output)
+    constexpr gpio_num_t HCSR04_ECHO_PIN = GPIO_NUM_18;         // Echo pin (input)
+    constexpr uint32_t DISTANCE_MEASUREMENT_INTERVAL_MS = 1000; // Measurement interval (ms)
+    constexpr uint32_t TRIGGER_PULSE_uS = 10;                   // Trigger pulse duration (µs)
+    constexpr float DISTANCE_THRESHOLD_CM = 400.0f;             // Max valid distance (cm)
+    constexpr uint32_t ECHO_TIMEOUT_US = 35000;                 // Echo timeout (µs)
+    */
+
     // ──────────────────────────────
     // Mailbox Detection Logic
     // ──────────────────────────────

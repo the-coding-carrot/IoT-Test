@@ -166,18 +166,16 @@ The processor maintains one of four states (persisted in RTC memory):
 │       └── vl53lxx-v2.cpp            # VL53L0X sensor implementation
 │
 ├── processor/
-│   └── distance/
-│       ├── distance_processor.hpp    # Distance processing & detection
-│       └── distance_processor.cpp    # Filtering, tracking, state machine
+│   ├── processor.hpp    # Distance processing & detection
+│   └── processor.cpp    # Filtering, tracking, state machine
 │
 ├── telemetry/
-│   ├── distance/
-│   │   ├── distance_telemetry.hpp    # Telemetry publishing interface
-│   │   └── distance_telemetry.cpp    # JSON formatting & logging
+│   ├── telemetry.hpp    # Telemetry publishing interface
+│   ├── telemetry.cpp    # JSON formatting & logging
 │   │
 │   └── publisher/
-│       ├── mqtt.hpp                  # MQTT client wrapper
-│       └── mqtt.cpp                  # MQTT connection & publishing
+│       ├── publisher.hpp                  # MQTT client wrapper
+│       └── publisher.cpp                  # MQTT connection & publishing
 │
 └── main.cpp                          # Application entry point & deep sleep control
 ```
@@ -352,9 +350,9 @@ The system publishes to three topic patterns under your configured base topic:
 ```cpp
 // In main.cpp after wake event
 if (critical_event || periodic_update) {
-    connect_wifi_blocking();
+    auto ipv4_addr = connect_wifi_blocking();
 
-    Telemetry::Distance::DistanceTelemetry telemetry;
+    Telemetry::Telemetry telemetry;
     telemetry.InitMQTT(
         MQTT_BROKER_URI,
         MQTT_BASE_TOPIC,
@@ -363,7 +361,7 @@ if (critical_event || periodic_update) {
         nullptr   // Password (optional)
     );
 
-    telemetry.Publish(data, processor.GetBaseline(), processor.GetThreshold());
+    telemetry.Publish(data, processor.GetBaseline(), processor.GetThreshold(), ipv4_addr);
 
     esp_wifi_disconnect();
     esp_wifi_stop();
@@ -385,7 +383,8 @@ if (critical_event || periodic_update) {
 
 ```json
 {
-  "telemetry": true,
+  "IPv4": "192.168.1.100",
+  "timestamp": "26.11.2025 19:11:25",
   "distance_cm": 37.2,
   "filtered_cm": 37.3,
   "baseline_cm": 40.0,
@@ -403,9 +402,9 @@ if (critical_event || periodic_update) {
 
 ```json
 {
-  "event": "mail_drop",
+  "IPv4": "192.168.1.100",
+  "timestamp": "26.11.2025 19:11:25",
   "baseline_cm": 40.0,
-  "before_cm": 40.0,
   "after_cm": 37.2,
   "delta_cm": 2.8,
   "duration_ms": 485,
@@ -423,7 +422,8 @@ if (critical_event || periodic_update) {
 
 ```json
 {
-  "event": "mail_collected",
+  "IPv4": "192.168.1.100",
+  "timestamp": "26.11.2025 19:11:25",
   "baseline_cm": 40.0,
   "before_cm": 37.2,
   "after_cm": 39.8,

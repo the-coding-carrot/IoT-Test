@@ -2,17 +2,17 @@
 set(COMPONENT_SRCS
     "main.cpp"
     "hardware/laser/vl53lxx-v2.cpp"
-    "telemetry/distance/distance_telemetry.cpp"
-    "processor/distance/distance_processor.cpp"
-    "telemetry/publisher/mqtt.cpp"
+    "processor/processor.cpp"
+    "telemetry/telemetry.cpp"
+    "telemetry/publisher/publisher.cpp"
 )
 
 # Public include directories
 set(COMPONENT_INCLUDE_DIRS
     "."
     "hardware/laser"
-    "telemetry/distance"
-    "processor/distance"
+    "processor"
+    "telemetry"
     "telemetry/publisher"
     "config"
 )

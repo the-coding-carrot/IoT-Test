@@ -11,15 +11,10 @@ namespace Hardware
         class VL53L0X
         {
         public:
-            // Construct a new VL53L0X sensor object
             VL53L0X(const i2c_port_t i2c_port, const gpio_num_t sda_pin, const gpio_num_t scl_pin, const uint8_t device_address = 0x29);
 
             ~VL53L0X();
 
-            /**
-             * Measure distance in millimeters
-             * Returns -1.0f on error
-             */
             float MeasureDistance(const uint32_t timeout_ms = 500);
 
         private:

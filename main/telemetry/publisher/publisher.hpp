@@ -7,7 +7,7 @@
 
 namespace Telemetry
 {
-    namespace MQTT
+    namespace Publisher
     {
         class MQTTPublisher
         {
@@ -37,7 +37,7 @@ namespace Telemetry
             bool IsConnected() const { return connected_; }
 
         private:
-            static constexpr const char *LOG_TAG = "MQTT";
+            static constexpr const char *LOG_TAG = "PUBLISHER";
 
             esp_mqtt_client_handle_t client_; ///< Handle to ESP-IDF MQTT client
             std::atomic<bool> connected_;     ///< Connection status flag

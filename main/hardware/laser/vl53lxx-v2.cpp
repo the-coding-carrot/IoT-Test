@@ -34,9 +34,7 @@ namespace Hardware
         VL53L0X::~VL53L0X()
         {
             if (initialized_)
-            {
                 i2c_driver_delete(i2c_port_);
-            }
         }
 
         bool VL53L0X::initI2C()
@@ -220,9 +218,7 @@ namespace Hardware
             i2c_master_write_byte(cmd, (device_address_ << 1) | I2C_MASTER_READ, true);
 
             if (length > 1)
-            {
                 i2c_master_read(cmd, buffer, length - 1, I2C_MASTER_ACK);
-            }
             i2c_master_read_byte(cmd, buffer + length - 1, I2C_MASTER_NACK);
             i2c_master_stop(cmd);
 
