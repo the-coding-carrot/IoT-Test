@@ -1,5 +1,5 @@
 #include "config/config.hpp"
-#include "hardware/ultrasonic/hcsr04.hpp"
+#include "hardware/laser/vl53lxx-v2.hpp"
 #include "processor/distance/distance_processor.hpp"
 #include "telemetry/distance/distance_telemetry.hpp"
 
@@ -101,13 +101,15 @@ extern "C" void app_main(void)
                  rtc_store.virtual_time_us / 1000000ULL);
     }
 
-    // Initialize Hardware
-    Hardware::Ultrasonic::HCSR04 ultrasonic(Config::HCSR04_TRIGGER_PIN, Config::HCSR04_ECHO_PIN);
+    // Initialize Hardware - VL53L0X laser sensor
+    Hardware::Laser::VL53L0X laser(Config::VL53L0X_I2C_PORT,
+                                   Config::VL53L0X_SDA_PIN,
+                                   Config::VL53L0X_SCL_PIN);
 
     // Restore Processor from RTC
     Processor::Distance::DistanceProcessor processor(rtc_store.processor_state);
 
-    float raw_dist = ultrasonic.MeasureDistance(Config::ECHO_TIMEOUT_US);
+    float raw_dist = laser.MeasureDistance(Config::VL53L0X_TIMEOUT_MS);
 
     // Pass the virtual time to the processor
     Processor::Distance::DistanceData data = processor.Process(raw_dist, rtc_store.virtual_time_us);

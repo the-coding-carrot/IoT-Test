@@ -1,54 +1,54 @@
 #pragma once
 
 #include "driver/gpio.h"
+#include "driver/i2c.h"
 
 namespace Config
 {
     // ──────────────────────────────
     // Application Info
     // ──────────────────────────────
-    constexpr const char *APP_NAME = "IoT Test"; // Application name
-    constexpr const char *APP_VERSION = "1.0.0"; // Application version
+    static constexpr const char *APP_NAME = "IoT Test"; // Application name
+    static constexpr const char *APP_VERSION = "1.0.0"; // Application version
 
     // ──────────────────────────────
-    // Ultrasonic Sensor (HC-SR04)
+    // Laser Sensor (VL53L0X)
     // ──────────────────────────────
-    constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_5;       // Trigger pin (output)
-    constexpr gpio_num_t HCSR04_ECHO_PIN = GPIO_NUM_18;         // Echo pin (input)
-    constexpr uint32_t DISTANCE_MEASUREMENT_INTERVAL_MS = 1000; // Measurement interval (ms)
-    constexpr uint32_t TRIGGER_PULSE_uS = 10;                   // Trigger pulse duration (µs)
-    constexpr float DISTANCE_THRESHOLD_CM = 400.0f;             // Max valid distance (cm)
-    constexpr uint32_t ECHO_TIMEOUT_US = 35000;                 // Echo timeout (µs)
+    static constexpr i2c_port_t VL53L0X_I2C_PORT = I2C_NUM_0;
+    static constexpr gpio_num_t VL53L0X_SDA_PIN = GPIO_NUM_21; // Typical ESP32 I2C SDA
+    static constexpr gpio_num_t VL53L0X_SCL_PIN = GPIO_NUM_22; // Typical ESP32 I2C SCL
+    static constexpr uint32_t VL53L0X_TIMEOUT_MS = 200;
+    static constexpr float DISTANCE_THRESHOLD_CM = 200.0f; // Max valid distance (cm)
 
     // ──────────────────────────────
     // Mailbox Detection Logic
     // ──────────────────────────────
-    constexpr float BASELINE_CM = 40.0f;     // Empty mailbox baseline (cm)
-    constexpr float TRIGGER_DELTA_CM = 3.0f; // Min change to detect occlusion (cm)
-    constexpr uint32_t HOLD_MS = 250;        // Occlusion hold time (ms)
-    constexpr uint32_t REFRACTORY_MS = 8000; // Refractory period after detection (ms)
+    static constexpr float BASELINE_CM = 40.0f;     // Empty mailbox baseline (cm)
+    static constexpr float TRIGGER_DELTA_CM = 2.0f; // Min change to detect occlusion (cm)
+    static constexpr uint32_t HOLD_MS = 200;        // Occlusion hold time (ms)
+    static constexpr uint32_t REFRACTORY_MS = 8000; // Refractory period after detection (ms)
 
     // ──────────────────────────────
     // Filtering
     // ──────────────────────────────
-    constexpr uint8_t FILTER_WINDOW = 5; // Median filter window size
+    static constexpr uint8_t FILTER_WINDOW = 3; // Median filter window size
 
     // ──────────────────────────────
     // MQTT Settings
     // ──────────────────────────────
-    constexpr const char *MQTT_BROKER_URI = "mqtt://192.168.1.100:1883"; // Broker URI
-    constexpr const char *MQTT_BASE_TOPIC = "home/mailbox";              // Base topic
-    constexpr const char *MQTT_CLIENT_ID = "mailbox-sensor-001";         // Client ID
+    static constexpr const char *MQTT_BROKER_URI = "mqtt://192.168.1.100:1883"; // Broker URI
+    static constexpr const char *MQTT_BASE_TOPIC = "home/mailbox";              // Base topic
+    static constexpr const char *MQTT_CLIENT_ID = "mailbox-sensor-001";         // Client ID
 
     // ──────────────────────────────
     // Wi-Fi Settings
     // ──────────────────────────────
-    constexpr const char *CONN_SSID = "Test"; // Wi-Fi SSID
-    constexpr const char *PASSWORD = "Test";  // Wi-Fi password
+    static constexpr const char *CONN_SSID = "Test"; // Wi-Fi SSID
+    static constexpr const char *PASSWORD = "Test";  // Wi-Fi password
 
     // ──────────────────────────────
     // Power Management
     // ──────────────────────────────
-    constexpr uint64_t DEEP_SLEEP_US = 10000000;      // Deep sleep duration (µs) - 10 seconds
-    constexpr uint64_t HEARTBEAT_INTERVAL_SEC = 7200; // Heartbeat interval (s) - 2 hours
+    static constexpr uint64_t DEEP_SLEEP_US = 5000000;       // Deep sleep duration (µs) - 5 seconds
+    static constexpr uint64_t HEARTBEAT_INTERVAL_SEC = 3600; // Heartbeat interval (s) - 1 hours
 }
