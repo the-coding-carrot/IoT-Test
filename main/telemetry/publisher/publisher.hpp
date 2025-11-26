@@ -12,10 +12,8 @@ namespace Telemetry
         class MQTTPublisher
         {
         public:
-            // Construct a new MQTT publisher
             MQTTPublisher();
 
-            // Destroy the MQTT object
             ~MQTTPublisher();
 
             // Initialize MQTT client with broker configuration
@@ -34,7 +32,7 @@ namespace Telemetry
             esp_err_t Publish(const char *topic, const char *json, int qos = 1);
 
             // Check if MQTT client is currently connected to broker
-            bool IsConnected() const { return connected_; }
+            bool IsConnected() const;
 
         private:
             static constexpr const char *LOG_TAG = "PUBLISHER";

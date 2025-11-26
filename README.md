@@ -383,10 +383,9 @@ if (critical_event || periodic_update) {
 
 ```json
 {
-  "IPv4": "192.168.1.100",
+  "device_ip": "192.168.1.100",
   "timestamp": "26.11.2025 19:11:25",
-  "distance_cm": 37.2,
-  "filtered_cm": 37.3,
+  "distance_cm": 37.3,
   "baseline_cm": 40.0,
   "threshold_cm": 37.0,
   "success_rate": 0.98,
@@ -402,11 +401,10 @@ if (critical_event || periodic_update) {
 
 ```json
 {
-  "IPv4": "192.168.1.100",
+  "device_ip": "192.168.1.100",
   "timestamp": "26.11.2025 19:11:25",
+  "distance_cm": 37.2,
   "baseline_cm": 40.0,
-  "after_cm": 37.2,
-  "delta_cm": 2.8,
   "duration_ms": 485,
   "confidence": 0.87,
   "success_rate": 0.98,
@@ -422,12 +420,11 @@ if (critical_event || periodic_update) {
 
 ```json
 {
-  "IPv4": "192.168.1.100",
+  "device_ip": "192.168.1.100",
   "timestamp": "26.11.2025 19:11:25",
-  "baseline_cm": 40.0,
   "before_cm": 37.2,
   "after_cm": 39.8,
-  "delta_cm": 2.6,
+  "baseline_cm": 40.0,
   "duration_ms": 280,
   "success_rate": 0.97,
   "new_state": "emptied"

@@ -112,5 +112,9 @@ namespace Telemetry
 
         // Get current date and time - timestamp
         std::string getCurrentDateTime();
+
+        // Adds common fields to a new cJSON root object.
+        cJSON *makeCommonRoot(const std::optional<std::string> &ip_addr,
+                              const std::string &timestamp);
     };
 }

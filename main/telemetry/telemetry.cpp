@@ -67,24 +67,31 @@ namespace Telemetry
         return timestamp;
     }
 
+    cJSON *Telemetry::makeCommonRoot(const std::optional<std::string> &ip_addr,
+                                     const std::string &timestamp)
+    {
+        cJSON *root = cJSON_CreateObject();
+        if (!root)
+            return nullptr;
+
+        cJSON_AddStringToObject(root, "device_ip", ip_addr.has_value() ? ip_addr->c_str() : "unknown");
+        cJSON_AddStringToObject(root, "timestamp", timestamp.c_str());
+
+        return root;
+    }
+
     void Telemetry::emitMailDropEvent(const Processor::DistanceData &data, const float &baseline_cm,
                                       std::optional<std::string> ip_addr)
     {
         const float confidence = calculateConfidence(data);
+        const auto timestamp = getCurrentDateTime();
 
-        cJSON *root = cJSON_CreateObject();
+        cJSON *root = makeCommonRoot(ip_addr, timestamp);
         if (!root)
             return;
 
-        const std::string ipv4_addr = ip_addr.has_value() ? ip_addr.value() : "unknown";
-        cJSON_AddStringToObject(root, "IPv4", ipv4_addr.c_str());
-
-        const auto timestamp = getCurrentDateTime();
-        cJSON_AddStringToObject(root, "timestamp", timestamp.c_str());
-
+        cJSON_AddNumberToObject(root, "distance_cm", data.filtered_cm);
         cJSON_AddNumberToObject(root, "baseline_cm", baseline_cm);
-        cJSON_AddNumberToObject(root, "after_cm", data.filtered_cm);
-        cJSON_AddNumberToObject(root, "delta_cm", data.delta_cm);
         cJSON_AddNumberToObject(root, "duration_ms", data.duration_ms);
         cJSON_AddNumberToObject(root, "confidence", confidence);
         cJSON_AddNumberToObject(root, "success_rate", data.success_rate);
@@ -96,20 +103,15 @@ namespace Telemetry
     void Telemetry::emitMailCollectedEvent(const Processor::DistanceData &data, const float &baseline_cm,
                                            std::optional<std::string> ip_addr)
     {
-        cJSON *root = cJSON_CreateObject();
+        const auto timestamp = getCurrentDateTime();
+
+        cJSON *root = makeCommonRoot(ip_addr, timestamp);
         if (!root)
             return;
 
-        const std::string ipv4_addr = ip_addr.has_value() ? ip_addr.value() : "unknown";
-        cJSON_AddStringToObject(root, "IPv4", ipv4_addr.c_str());
-
-        const auto timestamp = getCurrentDateTime();
-        cJSON_AddStringToObject(root, "timestamp", timestamp.c_str());
-
-        cJSON_AddNumberToObject(root, "baseline_cm", baseline_cm);
         cJSON_AddNumberToObject(root, "before_cm", data.filtered_cm - data.delta_cm);
         cJSON_AddNumberToObject(root, "after_cm", data.filtered_cm);
-        cJSON_AddNumberToObject(root, "delta_cm", data.delta_cm);
+        cJSON_AddNumberToObject(root, "baseline_cm", baseline_cm);
         cJSON_AddNumberToObject(root, "duration_ms", data.duration_ms);
         cJSON_AddNumberToObject(root, "success_rate", data.success_rate);
         cJSON_AddStringToObject(root, "new_state", stateToString(data.state));
@@ -122,19 +124,13 @@ namespace Telemetry
                                       std::optional<std::string> ip_addr)
     {
         const uint64_t now_us = esp_timer_get_time();
+        const auto timestamp = getCurrentDateTime();
 
-        cJSON *root = cJSON_CreateObject();
+        cJSON *root = makeCommonRoot(ip_addr, timestamp);
         if (!root)
             return;
 
-        const std::string ipv4_addr = ip_addr.has_value() ? ip_addr.value() : "unknown";
-        cJSON_AddStringToObject(root, "IPv4", ipv4_addr.c_str());
-
-        const auto timestamp = getCurrentDateTime();
-        cJSON_AddStringToObject(root, "timestamp", timestamp.c_str());
-
-        cJSON_AddNumberToObject(root, "distance_cm", data.raw_cm);
-        cJSON_AddNumberToObject(root, "filtered_cm", data.filtered_cm);
+        cJSON_AddNumberToObject(root, "distance_cm", data.filtered_cm);
         cJSON_AddNumberToObject(root, "baseline_cm", baseline_cm);
         cJSON_AddNumberToObject(root, "threshold_cm", threshold_cm);
         cJSON_AddNumberToObject(root, "success_rate", data.success_rate);

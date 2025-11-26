@@ -104,6 +104,8 @@ namespace Telemetry
             return ESP_OK;
         }
 
+        bool MQTTPublisher::IsConnected() const { return connected_; }
+
         void MQTTPublisher::mqttEventHandler(void *handler_args, esp_event_base_t base,
                                              int32_t event_id, void *event_data)
         {
