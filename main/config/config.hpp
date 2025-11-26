@@ -13,16 +13,16 @@ namespace Config
     // ──────────────────────────────
     // LED Settings
     // ──────────────────────────────
-    constexpr gpio_num_t LED_PIN = GPIO_NUM_8;  // Status LED pin
-    constexpr bool LED_ACTIVE_LOW = true;       // true = active low
+    constexpr gpio_num_t LED_PIN = GPIO_NUM_2;  // Built-in LED on many ESP32-WROOM-32 boards
+    constexpr bool LED_ACTIVE_LOW = false;      // ESP32-WROOM-32 typically active high
     constexpr uint32_t STARTUP_BLINK_COUNT = 5; // Number of startup blinks
     constexpr uint32_t STARTUP_BLINK_MS = 1000; // Blink duration (ms)
 
     // ──────────────────────────────
     // Ultrasonic Sensor (HC-SR04)
     // ──────────────────────────────
-    constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_2;       // Trigger pin (output)
-    constexpr gpio_num_t HCSR04_ECHO_PIN = GPIO_NUM_3;          // Echo pin (input)
+    constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_5;       // Trigger pin (output)
+    constexpr gpio_num_t HCSR04_ECHO_PIN = GPIO_NUM_18;         // Echo pin (input)
     constexpr uint32_t DISTANCE_MEASUREMENT_INTERVAL_MS = 1000; // Measurement interval (ms)
     constexpr uint32_t TRIGGER_PULSE_uS = 10;                   // Trigger pulse duration (µs)
     constexpr float DISTANCE_THRESHOLD_CM = 400.0f;             // Max valid distance (cm)
@@ -57,6 +57,6 @@ namespace Config
     // ──────────────────────────────
     // Power Management
     // ──────────────────────────────
-    constexpr uint64_t DEEP_SLEEP_US = 5000000;       // Deep sleep duration (µs)
-    constexpr uint64_t HEARTBEAT_INTERVAL_SEC = 3600; // Heartbeat interval (s)
+    constexpr uint64_t DEEP_SLEEP_US = 10000000;      // Deep sleep duration (µs) - 10 seconds
+    constexpr uint64_t HEARTBEAT_INTERVAL_SEC = 7200; // Heartbeat interval (s) - 2 hours
 }

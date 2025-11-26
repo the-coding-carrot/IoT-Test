@@ -59,12 +59,17 @@ bool connect_wifi_blocking()
             if (esp_netif_get_ip_info(netif, &ip_info) == ESP_OK)
             {
                 if (ip_info.ip.addr != 0)
+                {
+                    ESP_LOGI(LOG_TAG, "Wi-Fi Connected! IP: " IPSTR, IP2STR(&ip_info.ip));
                     return true;
+                }
             }
         }
         vTaskDelay(pdMS_TO_TICKS(100));
         retries++;
     }
+
+    ESP_LOGW(LOG_TAG, "Wi-Fi connection timeout");
     return false;
 }
 
