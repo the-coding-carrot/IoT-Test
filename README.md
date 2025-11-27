@@ -1,6 +1,6 @@
 # IoT Mailbox Monitor
 
-An ESP32-based smart mailbox system that detects mail delivery and collection using a VL53L0X-V2 laser distance sensor. It features a power-efficient deep sleep architecture with RTC state persistence, ensuring long battery life while maintaining accurate mail tracking.
+An ESP32-based smart mailbox system that detects mail delivery and collection using an HC-SR04P ultrasonic distance sensor. It features a power-efficient deep sleep architecture with RTC state persistence, ensuring long battery life while maintaining accurate mail tracking.
 
 ![Logo](docs/IoT_Value_Stack.png)
 
@@ -15,7 +15,7 @@ The system monitors the distance from the top of a mailbox to the floor. When ma
 - **Smart Wake Logic:** Radio only activates for critical events or periodic heartbeats
 - **Fault Tolerance:** State machine survives power cycles and maintains accuracy
 - **Smart Filtering:** Uses median filtering and refractory periods to ignore noise (insects, vibrations)
-- **Laser Precision:** VL53L0X sensor provides accurate measurements (±3% vs ±3cm of ultrasonic) with 3.3V native operation
+- **Ultrasonic Sensing:** HC-SR04P sensor provides reliable distance measurements with 3.3V compatibility
 
 ## Power Management Architecture
 
@@ -86,7 +86,7 @@ Otherwise, the system remains in deep sleep, consuming minimal power.
 ## How It Works
 
 1.  **Initialization:** On fresh boot, system initializes all state in RTC memory
-2.  **Wake & Measure:** Timer wakes ESP32, laser sensor measures distance via I2C
+2.  **Wake & Measure:** Timer wakes ESP32, ultrasonic sensor measures distance via GPIO
 3.  **Processing:**
     - **Median filter** smooths readings (filter state preserved in RTC)
     - **State machine** determines if change is a valid event
@@ -97,24 +97,24 @@ Otherwise, the system remains in deep sleep, consuming minimal power.
 ## Hardware Requirements
 
 - ESP32 development board (ESP32-WROOM-32 or similar)
-- VL53L0X-V2 laser distance sensor (I2C interface)
+- HC-SR04P ultrasonic distance sensor
 - **Power source:** USB or battery (3.7V LiPo recommended for portable deployment)
 
-### VL53L0X Advantages
+### HC-SR04P Advantages
 
-- **Higher accuracy:** ±3% typical vs ±3cm for ultrasonic sensors
-- **Native 3.3V operation:** Direct connection to ESP32 without level shifters
-- **I2C interface:** Simple 2-wire connection (SDA/SCL)
-- **Immune to ambient conditions:** Works regardless of temperature, humidity, or air currents
-- **Faster measurements:** Typical reading time ~30ms vs ~60ms for ultrasonic
-- **Lower noise:** Less susceptible to false readings from vibrations or insects
+- **3.3V Compatible:** Works directly with ESP32 logic levels (unlike standard HC-SR04 which requires 5V)
+- **Simple GPIO Interface:** Uses trigger/echo pulse timing method
+- **No external components:** No level shifters or voltage dividers needed
+- **Wide measurement range:** 2cm to 400cm effective range
+- **Cost effective:** Inexpensive and widely available
+- **Reliable:** Proven ultrasonic technology with minimal false readings
 
 ## IoT Value Stack
 
 ```mermaid
 graph TB
     subgraph "Edge Device - ESP32"
-        A[VL53L0X Sensor] --> B[Distance Processor]
+        A[HC-SR04P Sensor] --> B[Distance Processor]
         B --> C[State Machine]
         C --> D{Event or<br/>Heartbeat?}
         D -->|Yes| E[Wake Radio]
@@ -136,7 +136,7 @@ graph TB
 
 | Layer                 | Purpose                                               | Outputs                                       |
 | --------------------- | ----------------------------------------------------- | --------------------------------------------- |
-| **VL53L0X**           | Laser distance measurement via I2C                    | Distance in cm (or -1 on error)               |
+| **HC-SR04P**          | Ultrasonic distance measurement via GPIO pulse timing | Distance in cm (or -1 on error)               |
 | **DistanceProcessor** | Filtering, state tracking, detection, quality metrics | Structured `DistanceData` with state & events |
 | **RTC Store**         | Persistent state across sleep cycles                  | State context, virtual time, boot count       |
 | **Radio Controller**  | Conditional Wi-Fi/MQTT activation                     | Event publishing only when necessary          |
@@ -161,9 +161,9 @@ The processor maintains one of four states (persisted in RTC memory):
 │   └── config.hpp                    # Global configuration constants
 │
 ├── hardware/
-│   └── laser/
-│       ├── vl53lxx-v2.hpp            # VL53L0X sensor interface
-│       └── vl53lxx-v2.cpp            # VL53L0X sensor implementation
+│   └── ultrasonic/
+│       ├── hcsr04.hpp                # HC-SR04P sensor interface
+│       └── hcsr04.cpp                # HC-SR04P sensor implementation
 │
 ├── processor/
 │   ├── processor.hpp    # Distance processing & detection
@@ -196,8 +196,8 @@ void app_main() {
         restore_processor_state();
     }
 
-    // 2. Take measurement via I2C
-    float dist = laser_sensor.MeasureDistance();
+    // 2. Take measurement via GPIO pulse timing
+    float dist = ultrasonic_sensor.MeasureDistance();
     DistanceData data = processor.process(dist, virtual_time);
 
     // 3. Evaluate wake conditions
@@ -225,10 +225,10 @@ All system parameters are defined in `config/config.hpp`:
 
 ```cpp
 // Hardware configuration
-VL53L0X_I2C_PORT = I2C_NUM_0        // I2C port number
-VL53L0X_SDA_PIN = GPIO_NUM_21       // I2C SDA pin
-VL53L0X_SCL_PIN = GPIO_NUM_22       // I2C SCL pin
-VL53L0X_TIMEOUT_MS = 200            // Measurement timeout
+HCSR04_TRIGGER_PIN = GPIO_NUM_5     // Trigger pin (output)
+HCSR04_ECHO_PIN = GPIO_NUM_18       // Echo pin (input)
+TRIGGER_PULSE_uS = 10               // Trigger pulse duration (µs)
+ECHO_TIMEOUT_US = 35000             // Echo timeout (µs)
 
 // Detection sensitivity
 BASELINE_CM = 40.0          // Empty mailbox distance
@@ -258,9 +258,9 @@ PASSWORD = "YourPassword"   // Wi-Fi password
 The processor automatically calculates three thresholds from `BASELINE_CM` and `TRIGGER_DELTA_CM`:
 
 ```cpp
-Empty threshold  = BASELINE_CM - (TRIGGER_DELTA_CM × 0.5)   // 38.5 cm
-Trigger threshold = BASELINE_CM - TRIGGER_DELTA_CM          // 37.0 cm
-Full threshold    = BASELINE_CM - (TRIGGER_DELTA_CM × 2)    // 34.0 cm
+Empty threshold  = BASELINE_CM - (TRIGGER_DELTA_CM × 0.5)   // 39.0 cm
+Trigger threshold = BASELINE_CM - TRIGGER_DELTA_CM          // 38.0 cm
+Full threshold    = BASELINE_CM - (TRIGGER_DELTA_CM × 2)    // 36.0 cm
 ```
 
 ### Calibration
@@ -268,16 +268,16 @@ Full threshold    = BASELINE_CM - (TRIGGER_DELTA_CM × 2)    // 34.0 cm
 1. **Measure your mailbox**: Place sensor at top, measure distance to empty floor
 2. **Set `BASELINE_CM`**: Update in `config.hpp` with your measurement
 3. **Adjust sensitivity**: Tune `TRIGGER_DELTA_CM` based on typical mail thickness
-   - **VL53L0X recommendation**: Start with 2.0 cm (tighter than ultrasonic due to better precision)
-   - Increase if you get false positives from vibrations
-   - Can go as low as 1.5 cm for thin envelopes due to laser accuracy
-4. **Optimize filtering**: The VL53L0X has less noise than ultrasonic sensors
-   - **Recommended**: Start with `FILTER_WINDOW = 3` (faster response)
-   - Only increase to 5 if you experience noisy readings
-   - Lower values = faster mail detection but slightly more noise sensitivity
+   - **HC-SR04P recommendation**: Start with 2.0-3.0 cm for reliable detection
+   - Increase if you get false positives from vibrations or insects
+   - Typical accuracy is ±3mm, so avoid going below 2.0 cm
+4. **Optimize filtering**: Ultrasonic sensors can be affected by ambient conditions
+   - **Recommended**: Start with `FILTER_WINDOW = 3` for balance
+   - Increase to 5 if experiencing noisy readings
+   - Lower values = faster detection but more noise sensitivity
 5. **Tune hold time**: Adjust `HOLD_MS` for responsiveness
-   - **Recommended**: Start with 200 ms (faster than ultrasonic default)
-   - VL53L0X measurements are more stable, requiring shorter validation periods
+   - **Recommended**: Start with 200 ms for reliable validation
+   - Increase if detecting transient events (insects, vibrations)
 6. **Configure power**: Adjust `DEEP_SLEEP_US` to balance responsiveness vs battery life
 7. **Set heartbeat**: Configure `HEARTBEAT_INTERVAL_SEC` for periodic check-ins
 8. **Configure MQTT**: Set broker URI and topics in `config.hpp`
@@ -285,33 +285,35 @@ Full threshold    = BASELINE_CM - (TRIGGER_DELTA_CM × 2)    // 34.0 cm
 
 ### Hardware Wiring
 
-Connect the VL53L0X-V2 to your ESP32:
+Connect the HC-SR04P to your ESP32:
 
-| VL53L0X Pin | ESP32 Pin | Connection Required | Notes                                         |
-| ----------- | --------- | ------------------- | --------------------------------------------- |
-| VCC         | 3.3V      | **YES**             | Native 3.3V operation                         |
-| GND         | GND       | **YES**             | Common ground                                 |
-| SDA         | GPIO 21   | **YES**             | I2C data (configurable)                       |
-| SCL         | GPIO 22   | **YES**             | I2C clock (configurable)                      |
-| XSHUT       | -         | NO                  | Leave unconnected (internal pull-up)          |
-| GPIO1       | -         | NO                  | Interrupt output, not needed for polling mode |
+| HC-SR04P Pin | ESP32 Pin | Connection Required | Notes                      |
+| ------------ | --------- | ------------------- | -------------------------- |
+| VCC          | 3.3V      | **YES**             | 3.3V compatible (HC-SR04P) |
+| GND          | GND       | **YES**             | Common ground              |
+| TRIG         | GPIO 5    | **YES**             | Trigger pin (configurable) |
+| ECHO         | GPIO 18   | **YES**             | Echo pin (configurable)    |
 
-**Note:** The ESP32 has internal pull-up resistors on I2C pins, but if you experience communication issues, you may need external 4.7kΩ pull-up resistors on SDA and SCL lines.
+**Important:** Make sure you have the **HC-SR04P** variant (3.3V compatible), not the standard HC-SR04 (5V only). The HC-SR04P can be powered by 3.3V and outputs 3.3V logic levels safe for ESP32.
 
-#### Optional Pins Explained
+#### HC-SR04 vs HC-SR04P
 
-**XSHUT (Shutdown)**: This active-low pin allows you to put the sensor into hardware standby mode for power savings or to manage multiple sensors on the same I2C bus. For a single-sensor application with deep sleep power management, this pin is unnecessary since the entire ESP32 (and sensor) powers down during sleep. Leave it unconnected - it has an internal pull-up to keep the sensor active.
-
-**GPIO1 (Interrupt)**: This programmable output can signal when a new measurement is ready, enabling interrupt-driven operation. Since this project uses simple polling (request measurement → wait → read result), interrupts provide no benefit and would complicate the deep sleep architecture. Leave it unconnected.
+| Feature           | HC-SR04 (Standard)             | HC-SR04P (Plus)         |
+| ----------------- | ------------------------------ | ----------------------- |
+| Operating Voltage | 5V only                        | 3.3V - 5.5V             |
+| Logic Levels      | 5V (needs level shifter)       | 3.3V (ESP32 compatible) |
+| Current Draw      | ~15mA                          | ~15mA                   |
+| Range             | 2cm - 400cm                    | 2cm - 400cm             |
+| Use with ESP32    | Requires level shifter/divider | Direct connection       |
 
 ### Power Consumption Estimates
 
-Typical current draw (ESP32-WROOM-32 + VL53L0X):
+Typical current draw (ESP32-WROOM-32 + HC-SR04P):
 
 | Mode               | Current | Duration        | Notes                             |
 | ------------------ | ------- | --------------- | --------------------------------- |
 | Deep Sleep         | ~10 µA  | 5 sec (default) | RTC + ULP active                  |
-| Wake & Measure     | ~30 mA  | ~50 ms          | VL53L0X + I2C + processing        |
+| Wake & Measure     | ~30 mA  | ~60 ms          | HC-SR04P + GPIO + processing      |
 | Wi-Fi Active       | ~160 mA | ~3 sec          | Connect, publish, disconnect      |
 | **Average (idle)** | ~12 µA  | -               | No events, heartbeat every 1 hour |
 | **Average (busy)** | ~180 µA | -               | 5 events/hour + hourly heartbeat  |
@@ -320,12 +322,6 @@ Typical current draw (ESP32-WROOM-32 + VL53L0X):
 
 - Idle monitoring: ~6-7 months
 - Active use (20 events/day): ~4-5 months
-
-**Power Improvement vs Ultrasonic:**
-
-- VL53L0X draws less current during measurement (~10mA vs ~15mA)
-- Faster measurement time (~30ms vs ~60ms) reduces wake duration
-- Overall ~20-30% better battery life compared to HC-SR04 implementation
 
 ## MQTT Integration
 
@@ -363,6 +359,7 @@ if (critical_event || periodic_update) {
 
     telemetry.Publish(data, processor.GetBaseline(), processor.GetThreshold(), ipv4_addr);
 
+    telemetry.Stop();
     esp_wifi_disconnect();
     esp_wifi_stop();
 }
@@ -387,7 +384,7 @@ if (critical_event || periodic_update) {
   "timestamp": "26.11.2025 19:11:25",
   "distance_cm": 37.3,
   "baseline_cm": 40.0,
-  "threshold_cm": 37.0,
+  "threshold_cm": 38.0,
   "success_rate": 0.98,
   "mailbox_state": "has_mail"
 }
@@ -486,7 +483,7 @@ This state survives:
 
 ```
 Wake#  Time     Distance  State      Event           Radio    MQTT Topic
-═════════════════════════════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════════════════════════
 0      0s       40.0 cm   EMPTY      Fresh boot      ON       {base}/status
        ...      Sleep for 5 seconds...
 1      5s       40.0 cm   EMPTY      -               OFF      (no event)
@@ -532,19 +529,23 @@ idf.py flash monitor
 - **State loss**: Verify RTC_DATA_ATTR is used for persistent variables
 - **Incorrect timing**: Check virtual time calculations, verify sleep duration matches config
 
-### I2C/Sensor Issues
+### HC-SR04P Sensor Issues
 
-- **Sensor not detected**: Check wiring (SDA/SCL connections), verify 3.3V power supply
-- **Invalid model ID**: Ensure you have a genuine VL53L0X sensor (Model ID should be 0xEE)
-- **Intermittent readings**: Add external 4.7kΩ pull-up resistors on SDA and SCL lines
-- **I2C timeout errors**: Reduce I2C clock speed in code (try 100kHz instead of 400kHz)
-- **Distance always -1**: Check I2C bus initialization, verify sensor power connections
+- **No readings**: Verify you have HC-SR04P (3.3V), not standard HC-SR04 (5V only)
+- **Distance always -1**: Check wiring (TRIG/ECHO connections), verify 3.3V power
+- **Timeout errors**: Increase `ECHO_TIMEOUT_US` in config, check for physical obstructions
+- **Erratic readings**:
+  - Check for reflective or sound-absorbing surfaces in mailbox
+  - Angle sensor slightly downward (5-10 degrees) for better reflection
+  - Ensure sensor is mounted firmly to prevent vibration
+- **False positives**: Increase `HOLD_MS` or `TRIGGER_DELTA_CM` to filter out transient events
 
 ### MQTT Connection Issues
 
-- **Cannot connect**: Verify broker URI, check network connectivity (ESP32 only works with 2.4 GHz Wi-Fi)
-- **Connection drops**: Normal during sleep cycles; check heartbeat interval for periodic updates
+- **Cannot connect**: Verify broker URI and port (typically 1883), check network connectivity
+- **Connection drops**: Normal during sleep cycles; errors at disconnect are expected
 - **Messages not publishing**: Verify event detection logic, check Wi-Fi connection before MQTT init
+- **Transport errors on disconnect**: Expected behavior when WiFi disconnects while MQTT active
 
 ### Detection Issues
 
@@ -552,11 +553,10 @@ idf.py flash monitor
 - **Missed detections**: Decrease `TRIGGER_DELTA_CM`, verify `BASELINE_CM` calibration
 - **Duplicate events**: Check state machine logic, verify refractory period
 - **Delayed events**: Normal with deep sleep; event published on next wake cycle (max 5 sec delay)
-- **Erratic readings**: VL53L0X is sensitive to reflective surfaces; ensure mailbox interior is matte/non-reflective
 
 ### Power Consumption Higher Than Expected
 
 - **Check sleep duration**: Verify `DEEP_SLEEP_US` is configured correctly
 - **Monitor wake frequency**: Check if events triggering more often than expected
-- **Verify radio shutdown**: Ensure `esp_wifi_stop()` is called after publishing
-- **I2C pull-ups**: If using external pull-up resistors, use 4.7kΩ or higher (lower values increase power draw)
+- **Verify radio shutdown**: Ensure `telemetry.Stop()` and `esp_wifi_stop()` are called after publishing
+- **Sensor power**: HC-SR04P draws ~15mA during measurement burst

@@ -52,6 +52,16 @@ namespace Telemetry
         maybeEmitPeriodic(data, baseline_cm, threshold_cm, ip_addr);
     }
 
+    void Telemetry::Stop()
+    {
+        if (mqtt_publisher_)
+        {
+            mqtt_publisher_->Stop();
+            delete mqtt_publisher_;
+            mqtt_publisher_ = nullptr;
+        }
+    }
+
     std::string Telemetry::getCurrentDateTime()
     {
         // Get current time

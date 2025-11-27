@@ -1,7 +1,7 @@
 # Source files
 set(COMPONENT_SRCS
     "main.cpp"
-    "hardware/laser/vl53lxx-v2.cpp"
+    "hardware/ultrasonic/hcsr04.cpp"
     "processor/processor.cpp"
     "telemetry/telemetry.cpp"
     "telemetry/publisher/publisher.cpp"
@@ -10,7 +10,7 @@ set(COMPONENT_SRCS
 # Public include directories
 set(COMPONENT_INCLUDE_DIRS
     "."
-    "hardware/laser"
+    "hardware/ultrasonic"
     "processor"
     "telemetry"
     "telemetry/publisher"

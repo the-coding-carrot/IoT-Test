@@ -1,5 +1,5 @@
 #include "config/config.hpp"
-#include "hardware/laser/vl53lxx-v2.hpp"
+#include "hardware/ultrasonic/hcsr04.hpp"
 #include "processor/processor.hpp"
 #include "telemetry/telemetry.hpp"
 
@@ -8,6 +8,7 @@
 #include "nvs_flash.h"
 #include "esp_wifi.h"
 #include "esp_netif.h"
+#include "esp_sntp.h"
 
 #include <string>
 #include <map>
@@ -113,14 +114,12 @@ extern "C" void app_main(void)
     }
 
     // Initialize Hardware - VL53L0X laser sensor
-    Hardware::Laser::VL53L0X laser(Config::VL53L0X_I2C_PORT,
-                                   Config::VL53L0X_SDA_PIN,
-                                   Config::VL53L0X_SCL_PIN);
+    Hardware::Ultrasonic::HCSR04 sensor(Config::HCSR04_TRIGGER_PIN, Config::HCSR04_ECHO_PIN);
 
     // Restore Processor from RTC
     Processor::Processor processor(rtc_store.processor_state);
 
-    const float raw_dist = laser.MeasureDistance(Config::VL53L0X_TIMEOUT_MS);
+    const float raw_dist = sensor.MeasureDistance(Config::ECHO_TIMEOUT_US);
 
     // Pass the virtual time to the processor
     Processor::DistanceData data = processor.Process(raw_dist, rtc_store.virtual_time_us);
@@ -141,12 +140,25 @@ extern "C" void app_main(void)
         const auto connection_status = connect_wifi_blocking();
         if (connection_status.first)
         {
+            esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+            esp_sntp_setservername(0, "pool.ntp.org");
+            esp_sntp_init();
+
+            int retry = 0;
+            while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < 100)
+            {
+                vTaskDelay(pdMS_TO_TICKS(100));
+            }
+
             Telemetry::Telemetry telemetry;
             telemetry.InitMQTT(Config::MQTT_BROKER_URI, Config::MQTT_BASE_TOPIC, Config::MQTT_CLIENT_ID, nullptr, nullptr);
 
             vTaskDelay(pdMS_TO_TICKS(1000));
             telemetry.Publish(data, processor.GetBaseline(), processor.GetThreshold(), connection_status.second);
             vTaskDelay(pdMS_TO_TICKS(1000));
+
+            telemetry.Stop();
+            vTaskDelay(pdMS_TO_TICKS(100));
 
             esp_wifi_disconnect();
             esp_wifi_stop();

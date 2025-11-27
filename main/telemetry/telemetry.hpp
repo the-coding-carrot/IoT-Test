@@ -47,6 +47,8 @@ namespace Telemetry
                      const float baseline_cm, const float threshold_cm,
                      std::optional<std::string> ip_addr);
 
+        void Stop();
+
     private:
         static constexpr const char *LOG_TAG = "TELEMETRY";
 

@@ -12,16 +12,6 @@ namespace Config
     static constexpr const char *APP_VERSION = "1.0.0"; // Application version
 
     // ──────────────────────────────
-    // Laser Sensor (VL53L0X)
-    // ──────────────────────────────
-    static constexpr i2c_port_t VL53L0X_I2C_PORT = I2C_NUM_0;
-    static constexpr gpio_num_t VL53L0X_SDA_PIN = GPIO_NUM_21; // Typical ESP32 I2C SDA
-    static constexpr gpio_num_t VL53L0X_SCL_PIN = GPIO_NUM_22; // Typical ESP32 I2C SCL
-    static constexpr uint32_t VL53L0X_TIMEOUT_MS = 200;
-    static constexpr float DISTANCE_THRESHOLD_CM = 200.0f; // Max valid distance (cm)
-
-    /*
-    // ──────────────────────────────
     // Ultrasonic Sensor (HC-SR04)
     // ──────────────────────────────
     constexpr gpio_num_t HCSR04_TRIGGER_PIN = GPIO_NUM_5;       // Trigger pin (output)
@@ -30,7 +20,6 @@ namespace Config
     constexpr uint32_t TRIGGER_PULSE_uS = 10;                   // Trigger pulse duration (µs)
     constexpr float DISTANCE_THRESHOLD_CM = 400.0f;             // Max valid distance (cm)
     constexpr uint32_t ECHO_TIMEOUT_US = 35000;                 // Echo timeout (µs)
-    */
 
     // ──────────────────────────────
     // Mailbox Detection Logic
@@ -48,15 +37,15 @@ namespace Config
     // ──────────────────────────────
     // MQTT Settings
     // ──────────────────────────────
-    static constexpr const char *MQTT_BROKER_URI = "mqtt://192.168.1.100:1883"; // Broker URI
+    static constexpr const char *MQTT_BROKER_URI = "mqtt://10.178.116.70:1883"; // Broker URI
     static constexpr const char *MQTT_BASE_TOPIC = "home/mailbox";              // Base topic
     static constexpr const char *MQTT_CLIENT_ID = "mailbox-sensor-001";         // Client ID
 
     // ──────────────────────────────
     // Wi-Fi Settings
     // ──────────────────────────────
-    static constexpr const char *CONN_SSID = "Test"; // Wi-Fi SSID
-    static constexpr const char *PASSWORD = "Test";  // Wi-Fi password
+    static constexpr const char *CONN_SSID = "teaofthehe"; // Wi-Fi SSID
+    static constexpr const char *PASSWORD = "11235813";    // Wi-Fi password
 
     // ──────────────────────────────
     // Power Management
